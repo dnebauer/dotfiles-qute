@@ -40,6 +40,7 @@ import argparse
 import email.message
 import smtplib
 import configparser
+import inflect
 
 
 class AddToPocket(object):                                               # {{{1
@@ -91,6 +92,9 @@ class AddToPocket(object):                                               # {{{1
         self.__conf = os.path.join(os.path.expanduser('~'), 'qute_mail.ini')
         if not os.path.isfile(self.__conf):
             self.__abort("Cannot find config file '" + self.__conf + "'")
+
+        # pluraliser
+        self.__plural = inflect.engine()
 
     def __abort(self, message):                                          # {{{2
 
@@ -154,7 +158,9 @@ class AddToPocket(object):                                               # {{{1
                  'email': self.__email['From']}
         missing = {key: check[key] for key in check if not check[key]}
         if len(missing) > 0:
-            self.__abort('Missing config values: ' + ', '.join(missing.keys()))
+            self.__abort('Missing config ' +
+                         self.__plural.plural_noun('value', len(missing)) +
+                         ': ' + ', '.join(missing.keys()))
 
     @staticmethod
     def __trim_err(multi):                                               # {{{2
