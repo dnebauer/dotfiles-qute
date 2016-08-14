@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+
+# module docstring                                                         {{{1
+""" qutebrowser userscript to add the current page to Pocket
+
+This qutebrowser userscript is designed to be called from
+qutebrowser with a command like:
+'qutebrowser --userscript AddToPocket'.
+
+This userscript takes the current page in qutebrowser and
+adds it to Pocket.  The current page url is obtained from
+environmental variable 'QUTE_URL'. This url is sent to
+Pocket using the email method: send the url in the body of
+an email to add@getpocket.com from the email address
+associated with the desired Pocket account.
+
+Feedback is sent to qutebrowser's status line. This process
+uses environmental variable 'QUTE_FIFO' which holds the name
+of a named pipe (unix and mac os) or regular file (windows)
+used in communicating with qutebrowser.
+
+Details about the mail server and email account to use are
+obtained from ~/qute_mail.ini. The file format is:
+
+[server]
+address = ...
+port = ...
+
+[account]
+login = ...
+password = ...
+email = ...
+"""
+
+# import statements                                                        {{{1
+import os
+import sys
+import textwrap
+import argparse
+import email.message
+import smtplib
+import configparser
+
+
+class AddToPocket(object):                                               # {{{1
+
+    # class docstring                                                      {{{2
+    """ send url to qutebrowser by email
+
+    assumes the existence of correctly written configuration file
+    ~/qute_mail.ini
+
+    assumes this userscript has been called from within qutebrowser
+    with a command like 'spawn --userscript AddToPocket'
+
+    usage:
+
+    pocket = AddToPocket()
+    pocket.read_config()
+    pocket.send_email()
+    """
+
+    def __init__(self):                                                  # {{{2
+
+        """ initialise variables """
+
+        # mail server and account (to come from config file)
+        self.__server = {'smtp': None, 'port': None}
+        self.__account = {'login': None, 'password': None}
+
+        # email to be created
+        self.__email = email.message.Message()
+        self.__email['Subject'] = 'Add to Pocket'
+        self.__email['To'] = 'add@getpocket.com'
+        self.__email.add_header('Content-Type', 'text/plain')
+
+        # url to send (qute-set environmental variable)
+        self.__email.set_payload(os.getenv('QUTE_URL'))
+        if not self.__email.get_payload():
+            self.__abort('Missing environmental variable QUTE_URL')
+
+        # web page title (optional qute-set environmental variable)
+        self.__title = os.getenv('QUTE_TITLE')
+
+        # message pipe to qute (qute-set environmental variable)
+        self.__fifo = os.getenv('QUTE_FIFO')
+        if not self.__fifo:
+            self.__abort('Missing environmental variable QUTE_FIFO')
+
+        # configuration file is ~/qute_mail.ini
+        self.__conf = os.path.join(os.path.expanduser('~'), 'qute_mail.ini')
+        if not os.path.isfile(self.__conf):
+            self.__abort("Cannot find config file '" + self.__conf + "'")
+
+    def __abort(self, message):                                          # {{{2
+
+        """ exit script on failure
+
+        exiting without error status means error message is not followed
+        in status bar by an exit status message, and the first message
+        remains visible for a fraction longer
+        """
+
+        self.__status_message(message, 'error')
+        sys.exit()
+
+    def __status_message(self, message, kind):                           # {{{2
+
+        """ display message in qutebrowser status bar
+
+        message
+        - must be a simple string
+        - it cannot contain newlines
+        kind
+        - must be one of 'info', 'warning' or 'error'
+        - is not checked
+
+        note: cannot open pipe in append mode ('a') because it
+              causes the userscript to exit with status 1
+        """
+
+        cmd = 'message-' + kind + ' "' + message + '"'
+        fifo = open(self.__fifo, 'w')
+        fifo.write(cmd)
+        fifo.close()
+
+    def read_config(self):                                               # {{{2
+
+        """ read configuration file ~/qute_mail.ini """
+
+        # read in config file
+        config = configparser.ConfigParser()
+        try:
+            config.read(self.__conf)
+        except configparser.Error as err:
+            self.__abort("Failed to read '" + self.__conf + "': " +
+                         self.__trim_err(err))
+
+        # extract and check variables from config file
+        self.__server['smtp'] = config.get('server', 'address',
+                                           fallback=None)
+        self.__server['port'] = config.getint('server', 'port',
+                                              fallback=None)
+        self.__account['login'] = config.get('account', 'login',
+                                             fallback=None)
+        self.__account['password'] = config.get('account', 'password',
+                                                fallback=None)
+        self.__email['From'] = config.get('account', 'email',
+                                          fallback=None)
+        check = {'smtp': self.__server['smtp'],
+                 'port': self.__server['port'],
+                 'login': self.__account['login'],
+                 'password': self.__account['password'],
+                 'email': self.__email['From']}
+        missing = {key: check[key] for key in check if not check[key]}
+        if len(missing) > 0:
+            self.__abort('Missing config values: ' + ', '.join(missing.keys()))
+
+    @staticmethod
+    def __trim_err(multi):                                               # {{{2
+
+        """ make err string returned by exception safe for status line display
+
+        'message-send' command from status_message() fails if string
+        contains newlines or quotes are unbalanced, so:
+        - if string is multiline take only first line
+        - strip all quotes from string
+
+        also strip final period if present
+        """
+
+        err = str(multi).splitlines()[0]
+        return err.rstrip('.').replace("'", "").replace('"', '')
+
+    def send_email(self):                                                # {{{2
+
+        """ send email to Pocket email address """
+
+        try:
+            server = smtplib.SMTP(self.__server['smtp'], self.__server['port'])
+            server.login(self.__account['login'], self.__account['password'])
+            server.sendmail(self.__email['From'], self.__email['To'],
+                            self.__email.as_string())
+            server.quit()
+        except smtplib.SMTPException as err:
+            self.__abort('Email sending failed: ' + self.__trim_err(err))
+
+        # report success
+        if self.__title:
+            msg = 'Added to Pocket: ' + self.__title
+        else:
+            msg = 'Added page to Pocket'
+        self.__status_message(msg, 'info')
+        sys.exit(0)
+
+
+def usage():                                                             # {{{1
+
+    """ print help if requested """
+
+    description = textwrap.dedent('''\
+    qutebrowser userscript to add the current page to Pocket
+
+    This qutebrowser userscript is designed to be called from
+    qutebrowser with a command like:
+    'qutebrowser --userscript AddToPocket'.
+
+    This userscript takes the current page in qutebrowser and
+    adds it to Pocket.  The current page url is obtained from
+    environmental variable 'QUTE_URL'. This url is sent to
+    Pocket using the email method: send the url in the body of
+    an email to add@getpocket.com from the email address
+    associated with the desired Pocket account.
+
+    Feedback is sent to qutebrowser's status line. This process
+    uses environmental variable 'QUTE_FIFO' which holds the name
+    of a named pipe (unix and mac os) or regular file (windows)
+    used in communicating with qutebrowser.
+
+    Details about the mail server and email account to use are
+    obtained from ~/qute_mail.ini. The file format is:
+
+    [server]
+    address = ...
+    port = ...
+
+    [account]
+    login = ...
+    password = ...
+    email = ...
+    ''')
+    argparse.ArgumentParser(formatter_class=argparse.
+                            RawDescriptionHelpFormatter,
+                            description=description).parse_args()        # }}}1
+
+
+def main():
+
+    """ script execution starts here """
+
+    usage()
+    pocket = AddToPocket()
+    pocket.read_config()
+    pocket.send_email()
+
+if __name__ == '__main__':
+    main()
+
+# vim:fdm=marker:
