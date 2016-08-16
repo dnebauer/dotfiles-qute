@@ -86,7 +86,16 @@ class AddToPocket(object):                                               # {{{1
             self.__abort('Missing environmental variable QUTE_URL')
 
         # web page title (optional qute-set environmental variable)
-        self.__title = os.getenv('QUTE_TITLE')
+        self.__title = os.getenv('QUTE_TITLE')  # command mode
+        if not self.__title:
+            self.__title = os.getenv('QUTE_SELECTED_TEXT')  # hints mode
+        if not self.__title:  # desperation mode
+            head = self.__url
+            while head:  # walk back through url till get non-empty part
+                head, tail = os.path.split(head)
+                if tail:
+                    self.__title = tail
+                    break
 
         # message pipe to qute (qute-set environmental variable)
         self.__fifo = os.getenv('QUTE_FIFO')
