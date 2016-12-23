@@ -136,7 +136,7 @@ class AddToPocket(object):                                               # {{{1
         remains visible for a fraction longer
         """
 
-        cmd = 'message-error: "' + message + '"'
+        cmd = 'message-error "' + message + '"'
         self.__send_command(cmd)
         sys.exit()
 
@@ -319,6 +319,7 @@ def main():
     pocket = AddToPocket()
     pocket.read_config()
     pocket.add()
+
 
 if __name__ == '__main__':
     main()
