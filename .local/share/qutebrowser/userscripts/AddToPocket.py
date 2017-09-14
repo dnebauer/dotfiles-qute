@@ -277,13 +277,10 @@ def usage():                                                             # {{{1
 
     This userscript takes the current page in qutebrowser and
     adds it to Pocket.  The current page url is obtained from
-    environmental variable 'QUTE_URL'. The script first attempts
-    to send this url to Pocket by email (add@getpocket.com). In
+    environmental variable 'QUTE_URL'. The script attempts to
+    send this url to Pocket by email (add@getpocket.com). In
     Windows Outlook is used. In other operating systems the
-    generic python module 'smtplib' is used. If the attempt to
-    send by email fails the script attempts to add the url to
-    Pocket via the Pocket website
-    (http://www.getpocket.com/edit).
+    generic python module 'smtplib' is used.
 
     Feedback is sent to qutebrowser's status line. This process
     uses environmental variable 'QUTE_FIFO' which holds the name
