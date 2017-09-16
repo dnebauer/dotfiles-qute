@@ -111,6 +111,7 @@ replace "$temp_file" "‘" "'" || true
 replace "$temp_file" "‒" "--" || true
 replace "$temp_file" "–" "--" || true
 replace "$temp_file" "—" "--" || true
+replace "$temp_file" "…" "..." || true
 
 # copy temp file to output file location
 if [ -f "$md_path" ];  then
