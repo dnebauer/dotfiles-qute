@@ -71,13 +71,13 @@ required() {
     while [ $# -gt 0 ] ; do cmds=("${cmds[@]}" "$1") ; shift ; done
     for cmd in "${cmds[@]}" ; do
         if ! which "$cmd" > /dev/null ; then
-            die "Command »${cmd}« not found in PATH!"
+            die "Command not found in PATH: ${cmd}"
         fi
     done
 }
 
 # requirements
-[ -d "$DOWNLOAD_DIR" ] || die "Download directory »$DOWNLOAD_DIR« not found!"
+[ -d "$DOWNLOAD_DIR" ] || die "Download directory not found: $DOWNLOAD_DIR"
 required "$ZENITY" "$HTML2TEXT" "$SED" "$MKTEMP" "$RM" "$CP"
 
 # get download file path
@@ -116,10 +116,10 @@ replace "$temp_file" "…" "..." || true
 # copy temp file to output file location
 if [ -f "$md_path" ];  then
     $RM "$md_path" || true
-    [ -f "${md_path}" ] && die "Unable to overwrite existing file »${md_path}«"
+    [ -f "${md_path}" ] && die "Unable to overwrite existing file ${md_path}"
 fi
 $CP "$temp_file" "$md_path" || true
-[ -f "${md_path}" ] || die "Unable to save »$md_path«"
+[ -f "${md_path}" ] || die "Unable to save $md_path"
 
 # if here then must have succeeded
-info "Saved »$md_path«"
+info "Saved $md_path"
