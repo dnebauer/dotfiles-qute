@@ -21,7 +21,7 @@ config.bind(',m', 'spawn --userscript SaveMarkdown.sh')
 # - view source: ,s
 config.bind(',s', 'spawn --userscript qutebrowser_viewsource')
 # - open tab: t
-config.bind('t', 'set-cmd-text :open -t ')
+config.bind('t', 'set-cmd-text -s :open -t ')
 # - next tab: J | gt | <Ctrl-PgDown>
 config.unbind('J', mode='normal')
 config.bind('J', 'tab-next')
