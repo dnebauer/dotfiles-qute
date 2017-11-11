@@ -20,7 +20,7 @@ config.bind(';V', 'hint --rapid links spawn umpv {hint-url}')
 config.bind(',m', 'spawn --userscript SaveMarkdown.sh')
 # - view source: ,s
 config.bind(',s', 'spawn --userscript qutebrowser_viewsource')
-# - open tab: t
+# - open tab: t (the '-s' option appends a space)
 config.bind('t', 'set-cmd-text -s :open -t ')
 # - next tab: J | gt | <Ctrl-PgDown>
 config.unbind('J', mode='normal')
