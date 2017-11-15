@@ -17,7 +17,7 @@ config.bind(',v', 'spawn umpv {url}')
 config.bind('V', 'hint links spawn umpv {hint-url}')
 config.bind(';V', 'hint --rapid links spawn umpv {hint-url}')
 # - save to markdown file: ,m
-config.bind(',m', 'spawn --userscript SaveMarkdown.sh')
+config.bind(',m', 'spawn --userscript SaveMarkdown.py')
 # - view source: ,s
 config.bind(',s', 'spawn --userscript qutebrowser_viewsource')
 # - open tab: t (the '-s' option appends a space)
