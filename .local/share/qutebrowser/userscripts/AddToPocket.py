@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# module docstring                                                         {{{1
+# module docstring    {{{1
 """ qutebrowser userscript to add the current page to Pocket
 
 This qutebrowser userscript is designed to be called from
@@ -8,7 +8,7 @@ qutebrowser with a command like:
 'qutebrowser --userscript AddToPocket'.
 
 This userscript takes the current page in qutebrowser and
-adds it to Pocket.  The current page url is obtained from
+adds it to Pocket. The current page url is obtained from
 environmental variable 'QUTE_URL'. The script first attempts
 to send this url to Pocket by email (add@getpocket.com). In
 Windows Outlook is used. In other operating systems the
@@ -39,7 +39,7 @@ ignored in Windows: the default Outlook email account is
 used.
 """
 
-# import statements                                                        {{{1
+# import statements    {{{1
 import os
 import sys
 import textwrap
@@ -51,12 +51,12 @@ if platform.system() == 'Windows':
 else:
     import smtplib
 import configparser  # noqa: flake8: module level import not at top of file
-import inflect       # noqa: flake8: module level import not at top of file
+import inflect    # noqa: flake8: module level import not at top of file
 
 
-class AddToPocket(object):                                               # {{{1
+class AddToPocket(object):    # {{{1
 
-    # class docstring                                                      {{{2
+    # class docstring    {{{2
     """ send url to qutebrowser by email
 
     assumes the existence of correctly written configuration file
@@ -72,20 +72,20 @@ class AddToPocket(object):                                               # {{{1
     pocket.add()
     """
 
-    def __init__(self):                                                  # {{{2
+    def __init__(self):    # {{{2
 
         """ initialise variables """
 
-        # mail server and account (to come from config file)
+    # mail server and account (to come from config file)
         self.__server = {'smtp': None, 'port': None}
         self.__account = {'login': None, 'password': None, 'email': None}
 
-        # url to send (qute-set environmental variable)
+    # url to send (qute-set environmental variable)
         self.__url = os.getenv('QUTE_URL')
         if not self.__url:
             self.__abort('Missing environmental variable QUTE_URL')
 
-        # web page title (optional qute-set environmental variable)
+    # web page title (optional qute-set environmental variable)
         self.__title = os.getenv('QUTE_TITLE')  # command mode
         if not self.__title:
             self.__title = os.getenv('QUTE_SELECTED_TEXT')  # hints mode
@@ -97,21 +97,21 @@ class AddToPocket(object):                                               # {{{1
                     self.__title = tail
                     break
 
-        # message pipe to qute (qute-set environmental variable)
+    # message pipe to qute (qute-set environmental variable)
         self.__fifo = os.getenv('QUTE_FIFO')
         if not self.__fifo:
             self.__abort('Missing environmental variable QUTE_FIFO')
 
-        # configuration file is ~/qute_mail.ini
+    # configuration file is ~/qute_mail.ini
         self.__conf = os.path.join(os.path.expanduser('~'), 'qute_mail.ini')
         if not os.path.isfile(self.__conf):
             self.__abort("Cannot find config file '" + self.__conf + "'")
 
-        # pluraliser
+    # pluraliser
         self.__plural = inflect.engine()
 
     @staticmethod
-    def __simplify(string):                                              # {{{2
+    def __simplify(string):    # {{{2
 
         """ simplify string so it can be part of qutebrower command
 
@@ -125,7 +125,7 @@ class AddToPocket(object):                                               # {{{1
         simple = str(string).splitlines()[0]
         return simple.rstrip('.').replace("'", "").replace('"', '')
 
-    def __abort(self, message):                                          # {{{2
+    def __abort(self, message):    # {{{2
 
         """ exit script on failure
 
@@ -140,7 +140,7 @@ class AddToPocket(object):                                               # {{{1
         self.__send_command(cmd)
         sys.exit()
 
-    def __success(self):                                                 # {{{2
+    def __success(self):    # {{{2
 
         """ exit script on success """
 
@@ -150,7 +150,7 @@ class AddToPocket(object):                                               # {{{1
         self.__send_command(cmd)
         sys.exit()
 
-    def __send_command(self, command):                                   # {{{2
+    def __send_command(self, command):    # {{{2
 
         """ send command to qutebrowser via pipe
 
@@ -162,11 +162,11 @@ class AddToPocket(object):                                               # {{{1
         fifo.write(command)
         fifo.close()
 
-    def read_config(self):                                               # {{{2
+    def read_config(self):    # {{{2
 
         """ read configuration file ~/qute_mail.ini """
 
-        # read in config file
+    # read in config file
         config = configparser.ConfigParser()
         try:
             config.read(self.__conf)
@@ -174,7 +174,7 @@ class AddToPocket(object):                                               # {{{1
             self.__abort("Failed to read '" + self.__conf + "': " +
                          self.__simplify(err))
 
-        # extract and check variables from config file
+    # extract and check variables from config file
         self.__server['smtp'] = config.get('server', 'address',
                                            fallback=None)
         self.__server['port'] = config.getint('server', 'port',
@@ -196,7 +196,7 @@ class AddToPocket(object):                                               # {{{1
                          self.__plural.plural_noun('value', len(missing)) +
                          ': ' + ', '.join(missing.keys()))
 
-    def add(self):                                                       # {{{2
+    def add(self):    # {{{2
 
         """ add url to Pocket
 
@@ -204,27 +204,27 @@ class AddToPocket(object):                                               # {{{1
         then try adding via getpocket website
         """
 
-        # first try to add by sending email
+    # first try to add by sending email
         if platform.system() == 'Windows':
             self.__send_outlook_email()
         else:
             self.__send_smtp_email()
 
-        # if still here, then email attempt failed, so
-        # try using getpocket website
+    # if still here, then email attempt failed, so
+    # try using getpocket website
         cmd = 'open www.getpocket.com/edit?url=' + self.__url
         self.__send_command(cmd)
 
-        # effect of previous command is to open pocket website,
-        # and the website will clearly convey the outcome
+    # effect of previous command is to open pocket website,
+    # and the website will clearly convey the outcome
         sys.exit()
 
-    def __send_smtp_email(self):                                         # {{{2
+    def __send_smtp_email(self):    # {{{2
 
         """ send smtp email to Pocket email address """
 
         try:
-            # create email
+    # create email
             mail = email.message.Message()
             mail['To'] = 'add@getpocket.com'
             mail['From'] = self.__account['email']
@@ -232,7 +232,7 @@ class AddToPocket(object):                                               # {{{1
             mail.add_header('Content-Type', 'text/plain')
             mail.set_payload(self.__url)
 
-            # send email
+    # send email
             server = smtplib.SMTP(self.__server['smtp'], self.__server['port'])
             server.login(self.__account['login'], self.__account['password'])
             server.sendmail(self.__account['email'], mail['To'],
@@ -241,10 +241,10 @@ class AddToPocket(object):                                               # {{{1
         except smtplib.SMTPException:
             return
 
-        # assume success if no exceptions occurred
+    # assume success if no exceptions occurred
         self.__success()
 
-    def __send_outlook_email(self):                                      # {{{2
+    def __send_outlook_email(self):    # {{{2
 
         """ send Outlook email to Pocket email address """
 
@@ -260,11 +260,11 @@ class AddToPocket(object):                                               # {{{1
         except win32com.client.exception:
             return
 
-        # report success
+    # report success
         self.__success()
 
 
-def usage():                                                             # {{{1
+def usage():    # {{{1
 
     """ print help if requested """
 
@@ -305,7 +305,7 @@ def usage():                                                             # {{{1
     ''')
     argparse.ArgumentParser(formatter_class=argparse.
                             RawDescriptionHelpFormatter,
-                            description=description).parse_args()        # }}}1
+                            description=description).parse_args()    # }}}1
 
 
 def main():

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+# Copyright 2015 Zach-Button <zachrey.button@gmail.com>
+#
+# This file is part of qutebrowser.
+#
+# qutebrowser is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# qutebrowser is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with qutebrowser.  If not, see <http://www.gnu.org/licenses/>.
+
+#
+# This script fetches the unprocessed HTML source for a page and opens it in vim.
+#	:bind gf spawn --userscript qutebrowser_viewsource
+#
+# Caveat: Does not use authentication of any kind. Add it in if you want it to.
+#
+
+# wrap in function to use local variables
+
+view_source () {
+
+    # need tools
+
+    # - mktemp
+    if [ "$( which mktemp 2>/dev/null )" ] ; then
+        local MKTEMP='mktemp'
+    else
+        echo "message-error 'Need \"mktemp\" to view source'" >> "$QUTE_FIFO"
+        exit
+    fi
+    # - curl
+    if [ "$( which curl 2>/dev/null )" ] ; then
+        local CURL='curl'
+    else
+        echo "message-error 'Need \"curl\" to view source'" >> "$QUTE_FIFO"
+        exit
+    fi
+    # - terminal emulator
+    if [ "$( which x-terminal-emulator 2>/dev/null )" ] ; then
+        local EMULATOR='x-terminal-emulator'
+    elif [ "$( which terminator 2>/dev/null )" ] ; then
+        local EMULATOR='terminator'
+    elif [ "$( which gnome-terminal 2>/dev/null )" ] ; then
+        local EMULATOR='gnome-terminal'
+    elif [ "$( which konsole 2>/dev/null )" ] ; then
+        local EMULATOR='konsole'
+    elif [ "$( which urxvt 2>/dev/null )" ] ; then
+        local EMULATOR='urxvt'
+    elif [ "$( which rxvt 2>/dev/null )" ] ; then
+        local EMULATOR='rxvt'
+    else
+        echo "message-error 'Need terminal emulator to view source'" >> "$QUTE_FIFO"
+        exit
+    fi
+    # - viewer
+    if [ -n "$EDITOR" ] ; then
+        local VIEWER="$EDITOR"
+    elif [ "$( which vim 2>/dev/null )" ] ; then
+        local VIEWER='vim'
+    else
+        echo "message-error 'Need \"vim\" to view source'" >> "$QUTE_FIFO"
+        exit
+    fi
+    # - rm
+    if [ "$( which rm 2>/dev/null )" ] ; then
+        local RM='rm'
+    else
+        echo "message-error 'Need \"rm\" to view source'" >> "$QUTE_FIFO"
+        exit
+    fi
+
+    # download source
+
+    echo "message-info 'Downloading source...'" >> "$QUTE_FIFO"
+    path="$("$MKTEMP" --tmpdir qutebrowser_XXXXXXXX.html)"
+    "$CURL" "$QUTE_URL" > "$path"
+
+    # display source
+
+    echo "message-info 'Displaying source...'" >> "$QUTE_FIFO"
+    "$EMULATOR" -e "$VIEWER" "$path"
+
+    # clean up
+
+    "$RM" "$path"
+}
+
+view_source
