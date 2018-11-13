@@ -1,4 +1,3 @@
-vcsh-qute
-=========
+# dotfiles-qute
 
-Personal qutebrowser configuration in a vcsh repository
+Personal qutebrowser configuration.
